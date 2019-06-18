@@ -37,4 +37,18 @@ class CreateTest extends TestCase
 
         $this->assertNotEmpty(gzdecode($this->disk->get($fileName)));
     }
+    
+    /** @test */
+    public function it_can_create_a_snpashot_with_exclude_tables_as_array()
+    {
+        Artisan::call('snapshot:create', ['--exclude' => ['models']]);
+        
+        $fileName = Carbon::now()->format('Y-m-d_H-i-s').'.sql';
+        
+        $this->disk->assertExists($fileName);
+        
+        $contents = $this->disk->get($fileName);
+        
+        $this->assertNotRegExp('/CREATE TABLE(?: IF NOT EXISTS){0,1} "models"/', $contents);
+    }
 }
