@@ -26,7 +26,7 @@ class SnapshotFactory
         $this->filesystemFactory = $filesystemFactory;
     }
 
-    public function create(string $snapshotName, string $diskName, string $connectionName, bool $compress = false): Snapshot
+    public function create(string $snapshotName, string $diskName, string $connectionName, bool $compress = false, array $excludedTables = []): Snapshot
     {
         $disk = $this->getDisk($diskName);
 
@@ -43,7 +43,7 @@ class SnapshotFactory
             $connectionName
         ));
 
-        $this->createDump($connectionName, $fileName, $disk, $compress);
+        $this->createDump($connectionName, $fileName, $disk, $compress, $excludedTables);
 
         $snapshot = new Snapshot($disk, $fileName);
 
@@ -68,7 +68,7 @@ class SnapshotFactory
         return $factory::createForConnection($connectionName);
     }
 
-    protected function createDump(string $connectionName, string $fileName, FilesystemAdapter $disk, bool $compress = false)
+    protected function createDump(string $connectionName, string $fileName, FilesystemAdapter $disk, bool $compress = false, array $excludedTables = [])
     {
         $directory = (new TemporaryDirectory(config('db-snapshots.temporary_directory_path')))->create();
 
@@ -78,6 +78,10 @@ class SnapshotFactory
 
         if ($compress) {
             $dbDumper->useCompressor(new GzipCompressor());
+        }
+        
+        if (!empty($excludedTables)) {
+            $dbDumper->excludeTables($excludedTables);
         }
 
         $dbDumper->dumpToFile($dumpPath);
